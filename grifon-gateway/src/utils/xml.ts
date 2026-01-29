@@ -9,7 +9,8 @@ const parser = new XMLParser({
 
 const builder = new XMLBuilder({
   ignoreAttributes: false,
-  attributeNamePrefix: ""
+  attributeNamePrefix: "",
+  textNodeName: "text"
 });
 
 export const parseXmlToJson = (xml: string): unknown => {

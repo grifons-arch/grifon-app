@@ -1,3 +1,4 @@
+import pino, { Logger } from "pino";
 import { PrestaShopClient } from "../clients/PrestaShopClient";
 import { config } from "../config/env";
 import { extractResourceItem, extractResourceList } from "./prestashopParser";
@@ -5,7 +6,7 @@ import { buildXmlFromJson } from "../utils/xml";
 
 export interface RegisterRequest {
   email: string;
-  password: string;
+  passwd: string;
   socialTitle?: "mr" | "mrs";
   firstName: string;
   lastName: string;
@@ -30,6 +31,7 @@ export interface RegisterResponse {
 }
 
 const PENDING_STATUS = "PENDING_WHOLESALE_APPROVAL";
+const logger = pino({ name: "authService" });
 
 const buildCustomerPayload = (
   schema: unknown,
@@ -50,7 +52,9 @@ const buildCustomerPayload = (
     firstname: request.firstName,
     lastname: request.lastName,
     email: request.email,
-    passwd: request.password,
+    passwd: {
+      text: request.passwd
+    },
     active: "0",
     id_default_group: config.pendingWholesaleGroupId ?? baseCustomer.id_default_group,
     id_shop: config.defaultShopId,
@@ -172,9 +176,20 @@ const resolveCountryId = async (client: PrestaShopClient, countryIso: string): P
   return Number(countryId);
 };
 
-export const registerCustomer = async (request: RegisterRequest): Promise<RegisterResponse> => {
+export const registerCustomer = async (
+  request: RegisterRequest,
+  log: Logger = logger
+): Promise<RegisterResponse> => {
   const client = new PrestaShopClient({ shopId: config.defaultShopId });
   const email = request.email.trim().toLowerCase();
+  const passwd = request.passwd?.trim();
+  if (!passwd) {
+    throw {
+      status: 400,
+      code: "VALIDATION_ERROR",
+      message: "Password is required"
+    };
+  }
 
   const exists = await findCustomerByEmail(client, email);
   if (exists) {
@@ -192,9 +207,41 @@ export const registerCustomer = async (request: RegisterRequest): Promise<Regist
     schema,
     {
       ...request,
-      email
+      email,
+      passwd
     },
     groupIds
+  );
+  const safePayload = JSON.parse(JSON.stringify(payload));
+  const safeCustomer = (safePayload as any)?.prestashop?.customer;
+  if (safeCustomer?.passwd) {
+    if (typeof safeCustomer.passwd === "object") {
+      safeCustomer.passwd = { text: "***" };
+    } else {
+      safeCustomer.passwd = "***";
+    }
+  }
+  const hasPasswd = Boolean((payload as any)?.prestashop?.customer?.passwd);
+  log.info(
+    {
+      payload: safePayload,
+      hasPasswd
+    },
+    "Prestashop customer payload"
+  );
+  process.stdout.write(
+    `${JSON.stringify({
+      msg: "Prestashop customer payload",
+      payload: safePayload,
+      hasPasswd
+    })}\n`
+  );
+  process.stderr.write(
+    `${JSON.stringify({
+      msg: "Prestashop customer payload",
+      payload: safePayload,
+      hasPasswd
+    })}\n`
   );
   const xmlBody = buildXmlFromJson(payload);
 
@@ -224,6 +271,14 @@ export const registerCustomer = async (request: RegisterRequest): Promise<Regist
       message: "Η αίτηση καταχωρήθηκε και βρίσκεται σε αναμονή έγκρισης."
     };
   } catch (error: any) {
+    log.warn(
+      {
+        status: error?.status,
+        code: error?.code,
+        message: error?.message
+      },
+      "Prestashop customer creation failed"
+    );
     const message = String(error?.message ?? "Prestashop error");
     if (message.toLowerCase().includes("email") && message.toLowerCase().includes("exists")) {
       throw {

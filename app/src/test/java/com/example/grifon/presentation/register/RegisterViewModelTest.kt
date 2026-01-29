@@ -35,8 +35,8 @@ class RegisterViewModelTest {
         viewModel.onPostalCodeChange("10435")
         viewModel.onEmailChange("test@example.com")
         viewModel.onEmailConfirmationChange("test@example.com")
-        viewModel.onPasswordChange("secret123")
-        viewModel.onPasswordConfirmationChange("secret123")
+        viewModel.onPasswdChange("secret123")
+        viewModel.onPasswdConfirmationChange("secret123")
         viewModel.onCustomerDataPrivacyAcceptedChange(true)
         viewModel.onTermsAndPrivacyAcceptedChange(true)
 
@@ -74,8 +74,8 @@ class RegisterViewModelTest {
         viewModel.onPostalCodeChange("10435")
         viewModel.onEmailChange("test@example.com")
         viewModel.onEmailConfirmationChange("test@example.com")
-        viewModel.onPasswordChange("secret123")
-        viewModel.onPasswordConfirmationChange("secret123")
+        viewModel.onPasswdChange("secret123")
+        viewModel.onPasswdConfirmationChange("secret123")
         viewModel.onCustomerDataPrivacyAcceptedChange(true)
         viewModel.onTermsAndPrivacyAcceptedChange(true)
 

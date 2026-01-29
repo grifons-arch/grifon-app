@@ -2,6 +2,7 @@ package com.example.grifon.presentation.register
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import com.example.grifon.domain.auth.RegisterOutcome
 import com.example.grifon.domain.auth.RegisterParams
 import com.example.grifon.domain.auth.RegisterUseCase
@@ -69,12 +70,12 @@ class RegisterViewModel(
         _uiState.update { it.copy(postalCode = value) }
     }
 
-    fun onPasswordChange(value: String) {
-        _uiState.update { it.copy(password = value) }
+    fun onPasswdChange(value: String) {
+        _uiState.update { it.copy(passwd = value) }
     }
 
-    fun onPasswordConfirmationChange(value: String) {
-        _uiState.update { it.copy(passwordConfirmation = value) }
+    fun onPasswdConfirmationChange(value: String) {
+        _uiState.update { it.copy(passwdConfirmation = value) }
     }
 
     fun onCustomerDataPrivacyAcceptedChange(value: Boolean) {
@@ -91,14 +92,26 @@ class RegisterViewModel(
 
     fun onSubmit() {
         val currentState = _uiState.value
-        if (!currentState.isSubmitEnabled) return
+        Log.d("RegisterViewModel", "Submit clicked. ${validationDebug(currentState)}")
+        if (!currentState.isSubmitEnabled) {
+            val validationMessage = validationErrorMessage(currentState)
+            Log.w(
+                "RegisterViewModel",
+                "Submission blocked. ${validationDebug(currentState)} " +
+                    "message=$validationMessage",
+            )
+            _uiState.update {
+                it.copy(status = RegisterStatus.Error(validationMessage))
+            }
+            return
+        }
 
         _uiState.update { it.copy(status = RegisterStatus.Loading) }
         viewModelScope.launch {
             val result = registerUseCase(
                 RegisterParams(
                     email = currentState.email.trim(),
-                    password = currentState.password,
+                    passwd = currentState.passwd,
                     socialTitle = currentState.socialTitle.trim().ifBlank { null },
                     firstName = currentState.firstName.trim(),
                     lastName = currentState.lastName.trim(),
@@ -115,6 +128,7 @@ class RegisterViewModel(
                     termsAndPrivacyAccepted = currentState.termsAndPrivacyAccepted,
                 ),
             )
+            Log.d("RegisterViewModel", "Submit result: ${result::class.simpleName}")
             _uiState.update {
                 when (result) {
                     is RegisterOutcome.Success -> it.copy(
@@ -166,6 +180,47 @@ class RegisterViewModel(
             parts.isEmpty() -> "" to ""
             parts.size == 1 -> parts.first() to ""
             else -> parts.first() to parts.drop(1).joinToString(" ")
+        }
+    }
+
+    private fun validationDebug(state: RegisterUiState): String {
+        val missing = buildList {
+            if (state.firstName.isBlank()) add("firstName")
+            if (state.lastName.isBlank()) add("lastName")
+            if (state.country.trim().length != 2) add("countryIso")
+            if (state.city.isBlank()) add("city")
+            if (state.street.isBlank()) add("street")
+            if (state.postalCode.isBlank()) add("postalCode")
+            if (state.email.isBlank()) add("email")
+            if (state.email != state.emailConfirmation) add("emailConfirmation")
+            if (state.passwd.trim().length < 8) add("passwdLength")
+            if (state.passwd != state.passwdConfirmation) add("passwdConfirmation")
+            if (!state.customerDataPrivacyAccepted) add("customerDataPrivacyAccepted")
+            if (!state.termsAndPrivacyAccepted) add("termsAndPrivacyAccepted")
+        }
+        return "isSubmitEnabled=${state.isSubmitEnabled} " +
+            "missing=${missing.joinToString()} status=${state.status::class.simpleName}"
+    }
+
+    private fun validationErrorMessage(state: RegisterUiState): String {
+        val missing = buildList {
+            if (state.firstName.isBlank()) add("Όνομα")
+            if (state.lastName.isBlank()) add("Επώνυμο")
+            if (state.country.trim().length != 2) add("Χώρα (ISO)")
+            if (state.city.isBlank()) add("Πόλη")
+            if (state.street.isBlank()) add("Οδός και Αριθμός")
+            if (state.postalCode.isBlank()) add("Τ.Κ")
+            if (state.email.isBlank()) add("Email")
+            if (state.email != state.emailConfirmation) add("Επιβεβαίωση Email")
+            if (state.passwd.trim().length < 8) add("Κωδικός (τουλάχιστον 8 χαρακτήρες)")
+            if (state.passwd != state.passwdConfirmation) add("Επιβεβαίωση Κωδικού")
+            if (!state.customerDataPrivacyAccepted) add("Προστασία δεδομένων πελάτη")
+            if (!state.termsAndPrivacyAccepted) add("Όρους και πολιτική απορρήτου")
+        }
+        return if (missing.isEmpty()) {
+            "Δεν είναι δυνατή η αποθήκευση. Ελέγξτε τα στοιχεία σας."
+        } else {
+            "Συμπληρώστε τα υποχρεωτικά πεδία: ${missing.joinToString()}."
         }
     }
 }

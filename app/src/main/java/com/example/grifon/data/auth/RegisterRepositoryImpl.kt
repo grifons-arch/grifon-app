@@ -14,37 +14,55 @@ class RegisterRepositoryImpl(
 ) : RegisterRepository {
     override suspend fun register(params: RegisterParams): RegisterOutcome {
         return try {
+            val cleanEmail = params.email.trim()
+            val cleanPasswd = params.passwd.trim()
             Log.d(
                 TAG,
-                    "Register request: email=${params.email}, socialTitle=${params.socialTitle}, " +
+                "Register request: email=$cleanEmail, socialTitle=${params.socialTitle}, " +
                     "firstName=${params.firstName}, lastName=${params.lastName}, countryIso=${params.countryIso}, " +
                     "street=${params.street}, city=${params.city}, postalCode=${params.postalCode}, " +
                     "phone=${params.phone}, company=${params.company}, vatNumber=${params.vatNumber}, " +
-                    "iban=${params.iban}, " +
+                    "iban=${params.iban}, passwdProvided=${cleanPasswd.isNotBlank()}, " +
                     "customerDataPrivacyAccepted=${params.customerDataPrivacyAccepted}, " +
                     "newsletter=${params.newsletter}, termsAndPrivacyAccepted=${params.termsAndPrivacyAccepted}, " +
                     "partnerOffers=${params.partnerOffers}",
             )
-            val response = api.register(
-                RegisterRequestDto(
-                    email = params.email,
-                    password = params.password,
-                    socialTitle = params.socialTitle,
-                    firstName = params.firstName,
-                    lastName = params.lastName,
-                    countryIso = params.countryIso,
-                    street = params.street,
-                    city = params.city,
-                    postalCode = params.postalCode,
-                    phone = params.phone,
-                    company = params.company,
-                    vatNumber = params.vatNumber,
-                    iban = params.iban,
-                    customerDataPrivacyAccepted = params.customerDataPrivacyAccepted,
-                    newsletter = params.newsletter,
-                    termsAndPrivacyAccepted = params.termsAndPrivacyAccepted,
-                    partnerOffers = params.partnerOffers,
-                ),
+            if (cleanEmail.isBlank() || cleanPasswd.isBlank()) {
+                Log.w(TAG, "Register request missing email or passwd.")
+                return RegisterOutcome.Error("Ελέγξτε το email και τον κωδικό πρόσβασης.")
+            }
+            if (cleanPasswd.length < 8) {
+                Log.w(TAG, "Register request rejected: passwd length < 8.")
+                return RegisterOutcome.Error("Ο κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες.")
+            }
+            val request = RegisterRequestDto(
+                email = cleanEmail,
+                password = cleanPasswd,
+                socialTitle = params.socialTitle,
+                firstName = params.firstName,
+                lastName = params.lastName,
+                countryIso = params.countryIso,
+                street = params.street,
+                city = params.city,
+                postalCode = params.postalCode,
+                phone = params.phone,
+                company = params.company,
+                vatNumber = params.vatNumber,
+                iban = params.iban,
+                customerDataPrivacyAccepted = params.customerDataPrivacyAccepted,
+                newsletter = params.newsletter,
+                termsAndPrivacyAccepted = params.termsAndPrivacyAccepted,
+                partnerOffers = params.partnerOffers,
+            )
+            Log.d(
+                TAG,
+                "Register payload: passwdKey=passwd, passwordProvided=${cleanPasswd.isNotBlank()}",
+            )
+            val response = api.register(request)
+            Log.d(
+                TAG,
+                "Register response: customerId=${response.customerId}, status=${response.status}, " +
+                    "message=${response.message}",
             )
             RegisterOutcome.Success(
                 RegisterResult(

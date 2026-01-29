@@ -10,3 +10,5 @@ backend/node_modules/
 grifon-gateway/node_modules/
 backend/dist/
 backend/.env
+
+grifon-gateway/.env

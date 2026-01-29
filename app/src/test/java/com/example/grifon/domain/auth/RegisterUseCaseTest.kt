@@ -19,7 +19,7 @@ class RegisterUseCaseTest {
         val result = useCase(
             RegisterParams(
                 email = "test@example.com",
-                password = "secret123",
+                passwd = "secret123",
                 firstName = "Test",
                 lastName = "User",
                 countryIso = "GR",
@@ -40,7 +40,7 @@ class RegisterUseCaseTest {
         val result = useCase(
             RegisterParams(
                 email = "test@example.com",
-                password = "secret123",
+                passwd = "secret123",
                 firstName = "Test",
                 lastName = "User",
                 countryIso = "GR",

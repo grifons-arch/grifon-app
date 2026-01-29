@@ -1,8 +1,10 @@
 package com.example.grifon.data.auth
 
+import com.squareup.moshi.Json
+
 data class RegisterRequestDto(
     val email: String,
-    val password: String,
+    @Json(name = "passwd") val password: String,
     val socialTitle: String? = null,
     val firstName: String,
     val lastName: String,
@@ -17,11 +19,11 @@ data class RegisterRequestDto(
     val customerDataPrivacyAccepted: Boolean = false,
     val newsletter: Boolean = false,
     val termsAndPrivacyAccepted: Boolean = false,
-    val partnerOffers: Boolean? = null,
+    val partnerOffers: Boolean? = null
 )
 
 data class RegisterResponseDto(
     val customerId: String,
     val status: String,
-    val message: String,
+    val message: String
 )

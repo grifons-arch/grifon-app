@@ -41,22 +41,32 @@ export const productIdSchema = z.object({
   productId: z.preprocess(toNumber, z.number().int().positive())
 });
 
-export const registerBodySchema = z.object({
-  email: z.string().trim().email(),
-  password: z.string().min(8),
-  socialTitle: z.preprocess(toOptionalString, z.enum(["mr", "mrs"]).optional()),
-  firstName: z.string().trim().min(1),
-  lastName: z.string().trim().min(1),
-  countryIso: z.string().trim().length(2),
-  street: z.string().trim().min(1),
-  city: z.string().trim().min(1),
-  postalCode: z.string().trim().min(1),
-  phone: z.string().trim().min(1).optional(),
-  company: z.string().trim().min(1).optional(),
-  vatNumber: z.string().trim().min(1).optional(),
-  iban: z.string().trim().min(1).optional(),
-  customerDataPrivacyAccepted: z.boolean().optional().default(false),
-  newsletter: z.boolean().optional().default(false),
-  termsAndPrivacyAccepted: z.boolean().optional().default(false),
-  partnerOffers: z.boolean().optional()
-});
+export const registerBodySchema = z
+  .object({
+    email: z.string().trim().email(),
+    passwd: z.preprocess(toOptionalString, z.string().min(8).optional()),
+    socialTitle: z.preprocess(toOptionalString, z.enum(["mr", "mrs"]).optional()),
+    firstName: z.string().trim().min(1),
+    lastName: z.string().trim().min(1),
+    countryIso: z.string().trim().length(2),
+    street: z.string().trim().min(1),
+    city: z.string().trim().min(1),
+    postalCode: z.string().trim().min(1),
+    phone: z.string().trim().min(1).optional(),
+    company: z.string().trim().min(1).optional(),
+    vatNumber: z.string().trim().min(1).optional(),
+    iban: z.string().trim().min(1).optional(),
+    customerDataPrivacyAccepted: z.boolean().optional().default(false),
+    newsletter: z.boolean().optional().default(false),
+    termsAndPrivacyAccepted: z.boolean().optional().default(false),
+    partnerOffers: z.boolean().optional()
+  })
+  .superRefine((data, ctx) => {
+    if (!data.passwd) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Password is required",
+        path: ["passwd"]
+      });
+    }
+  });

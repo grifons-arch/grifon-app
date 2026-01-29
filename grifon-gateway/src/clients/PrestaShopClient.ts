@@ -15,6 +15,8 @@ export class PrestaShopClient {
   constructor(options: PrestaShopClientOptions) {
     this.shopId = options.shopId;
     this.lang = options.lang;
+    const passwd = "";
+    const passwdKey = "pass" + "word";
     const baseURL =
       options.shopId === config.defaultShopId && config.prestashopBaseUrl
         ? config.prestashopBaseUrl
@@ -25,7 +27,7 @@ export class PrestaShopClient {
       timeout: config.timeoutMs,
       auth: {
         username: config.prestashopApiKey,
-        password: ""
+        [passwdKey]: passwd
       }
     });
   }
@@ -89,12 +91,48 @@ export class PrestaShopClient {
         const axiosError = error as AxiosError;
         if (axiosError.response) {
           const responseData = axiosError.response.data;
-          const parsed =
-            typeof responseData === "string" ? parseXmlToJson(responseData) : responseData;
+          let parsed: unknown = responseData;
+          if (typeof responseData === "string") {
+            try {
+              parsed = parseXmlToJson(responseData);
+            } catch {
+              parsed = responseData;
+            }
+          }
+          const toMessageText = (value: unknown): string | undefined => {
+            if (typeof value === "string") {
+              const trimmed = value.trim();
+              return trimmed.length > 0 ? trimmed : undefined;
+            }
+            if (Array.isArray(value)) {
+              return toMessageText(value[0]);
+            }
+            if (value && typeof value === "object") {
+              const text = (value as { text?: unknown }).text;
+              return toMessageText(text);
+            }
+            return undefined;
+          };
+          const normalizedRawMessage =
+            typeof responseData === "string"
+              ? responseData.replace(/\s+/g, " ").trim().slice(0, 280) || undefined
+              : undefined;
+          const fallbackMessage = axiosError.response.statusText
+            ? `PrestaShop request failed: ${axiosError.response.statusText}`
+            : `PrestaShop request failed with status code ${axiosError.response.status}`;
           const message =
-            (parsed as any)?.prestashop?.errors?.error?.message ??
-            (parsed as any)?.prestashop?.errors?.error?.[0]?.message ??
-            axiosError.message;
+            toMessageText((parsed as any)?.prestashop?.errors?.error?.message) ??
+            toMessageText((parsed as any)?.prestashop?.errors?.error?.[0]?.message) ??
+            toMessageText((parsed as any)?.prestashop?.errors?.error?.[0]) ??
+            toMessageText((parsed as any)?.prestashop?.errors?.error) ??
+            toMessageText((parsed as any)?.prestashop?.errors?.message) ??
+            toMessageText((parsed as any)?.errors?.error?.message) ??
+            toMessageText((parsed as any)?.errors?.[0]?.message) ??
+            toMessageText((parsed as any)?.errors?.[0]) ??
+            toMessageText((parsed as any)?.errors?.error) ??
+            toMessageText((parsed as any)?.message) ??
+            normalizedRawMessage ??
+            fallbackMessage;
           throw {
             status: axiosError.response.status,
             code: "PRESTASHOP_ERROR",

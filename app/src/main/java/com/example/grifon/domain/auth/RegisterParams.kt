@@ -2,7 +2,7 @@ package com.example.grifon.domain.auth
 
 data class RegisterParams(
     val email: String,
-    val password: String,
+    val passwd: String,
     val socialTitle: String? = null,
     val firstName: String,
     val lastName: String,

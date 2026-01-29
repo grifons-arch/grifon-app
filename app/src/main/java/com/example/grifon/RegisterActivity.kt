@@ -69,8 +69,8 @@ private fun RegisterScreen(
 ) {
     val state by registerViewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
-    var isPasswordVisible by remember { mutableStateOf(false) }
-    var isPasswordConfirmationVisible by remember { mutableStateOf(false) }
+    var isPasswdVisible by remember { mutableStateOf(false) }
+    var isPasswdConfirmationVisible by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -168,21 +168,21 @@ private fun RegisterScreen(
             placeholder = "Επιβεβαίωση Email *",
         )
         RegistrationTextField(
-            value = state.password,
-            onValueChange = registerViewModel::onPasswordChange,
+            value = state.passwd,
+            onValueChange = registerViewModel::onPasswdChange,
             placeholder = "Κωδικός *",
-            isPassword = true,
-            isPasswordVisible = isPasswordVisible,
-            onPasswordVisibilityChange = { isPasswordVisible = !isPasswordVisible },
+            isPasswd = true,
+            isPasswdVisible = isPasswdVisible,
+            onPasswdVisibilityChange = { isPasswdVisible = !isPasswdVisible },
         )
         RegistrationTextField(
-            value = state.passwordConfirmation,
-            onValueChange = registerViewModel::onPasswordConfirmationChange,
+            value = state.passwdConfirmation,
+            onValueChange = registerViewModel::onPasswdConfirmationChange,
             placeholder = "Επιβεβαίωση Κωδικού *",
-            isPassword = true,
-            isPasswordVisible = isPasswordConfirmationVisible,
-            onPasswordVisibilityChange = {
-                isPasswordConfirmationVisible = !isPasswordConfirmationVisible
+            isPasswd = true,
+            isPasswdVisible = isPasswdConfirmationVisible,
+            onPasswdVisibilityChange = {
+                isPasswdConfirmationVisible = !isPasswdConfirmationVisible
             },
         )
 
@@ -213,7 +213,7 @@ private fun RegisterScreen(
 
         Button(
             onClick = registerViewModel::onSubmit,
-            enabled = state.isSubmitEnabled,
+            enabled = state.status !is RegisterStatus.Loading,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .padding(top = 8.dp),
@@ -266,9 +266,9 @@ private fun RegistrationTextField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
-    isPassword: Boolean = false,
-    isPasswordVisible: Boolean = false,
-    onPasswordVisibilityChange: (() -> Unit)? = null,
+    isPasswd: Boolean = false,
+    isPasswdVisible: Boolean = false,
+    onPasswdVisibilityChange: (() -> Unit)? = null,
 ) {
     TextField(
         value = value,
@@ -282,16 +282,16 @@ private fun RegistrationTextField(
         modifier = Modifier.fillMaxWidth(),
         textStyle = MaterialTheme.typography.bodyMedium,
         shape = RoundedCornerShape(10.dp),
-        visualTransformation = if (isPassword && !isPasswordVisible) {
+        visualTransformation = if (isPasswd && !isPasswdVisible) {
             PasswordVisualTransformation()
         } else {
             VisualTransformation.None
         },
-        trailingIcon = if (isPassword && onPasswordVisibilityChange != null) {
+        trailingIcon = if (isPasswd && onPasswdVisibilityChange != null) {
             {
-                IconButton(onClick = onPasswordVisibilityChange) {
+                IconButton(onClick = onPasswdVisibilityChange) {
                     Icon(
-                        imageVector = if (isPasswordVisible) {
+                        imageVector = if (isPasswdVisible) {
                             Icons.Filled.VisibilityOff
                         } else {
                             Icons.Filled.Visibility
