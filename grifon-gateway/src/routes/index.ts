@@ -4,6 +4,7 @@ import { config, shops } from "../config/env";
 import { validateQuery, validateParams, validateBody } from "../middleware/validate";
 import {
   categoryIdSchema,
+  categoryMenuQuerySchema,
   customerIdSchema,
   paginationSchema,
   productIdSchema,
@@ -12,7 +13,7 @@ import {
   shopQuerySchema
 } from "./schemas";
 import { PrestaShopClient } from "../clients/PrestaShopClient";
-import { listCategories } from "../services/categoryService";
+import { getCategoryMenu, listCategories } from "../services/categoryService";
 import { listPages } from "../services/pageService";
 import { listProductsByCategory, getProductDetail } from "../services/productService";
 import { listGroupsWithMembers } from "../services/groupService";
@@ -123,6 +124,45 @@ apiRouter.get(
       const client = new PrestaShopClient({ shopId, lang });
       const { items, tree } = await listCategories(client, page, pageSize, lang);
       const response = { page, pageSize, items, tree };
+      await cache.set(cacheKey, response, config.cacheTtlCategoriesSeconds);
+      res.json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+apiRouter.get(
+  "/v1/categories/menu",
+  validateQuery(shopQuerySchema.merge(categoryMenuQuerySchema)),
+  async (req, res, next) => {
+    try {
+      const { shopId, lang, rootCategoryId, maxDepth } = req.query as any;
+      const cacheKey = buildCacheKey({
+        route: "categories/menu",
+        shopId,
+        lang,
+        rootCategoryId,
+        maxDepth
+      });
+
+      const cached = await cache.get(cacheKey);
+      if (cached) {
+        res.json(cached);
+        return;
+      }
+
+      const client = new PrestaShopClient({ shopId, lang });
+      const items = await getCategoryMenu(client, lang, {
+        rootCategoryId: Number(rootCategoryId),
+        maxDepth: Number(maxDepth)
+      });
+      const response = {
+        rootCategoryId: Number(rootCategoryId),
+        maxDepth: Number(maxDepth),
+        items
+      };
+
       await cache.set(cacheKey, response, config.cacheTtlCategoriesSeconds);
       res.json(response);
     } catch (error) {

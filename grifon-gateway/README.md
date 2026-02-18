@@ -83,6 +83,12 @@ curl "http://localhost:3000/v1/categories?shopId=4&lang=1&page=1&pageSize=50"
 curl "http://localhost:3000/v1/categories/12/products?shopId=4&lang=1&page=1&pageSize=20&sort=[id_DESC]"
 ```
 
+### Category Menu (shop by category)
+
+```bash
+curl "http://localhost:3000/v1/categories/menu?shopId=4&lang=1&rootCategoryId=2&maxDepth=3"
+```
+
 ### Product Details (active only, optional price access)
 
 ```bash
