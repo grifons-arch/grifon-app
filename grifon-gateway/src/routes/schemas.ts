@@ -23,6 +23,11 @@ export const paginationSchema = z.object({
   pageSize: z.preprocess(toNumber, z.number().int().min(1).max(200)).default(50)
 });
 
+export const categoryMenuQuerySchema = z.object({
+  rootCategoryId: z.preprocess(toNumber, z.number().int().positive().optional()).default(2),
+  maxDepth: z.preprocess(toNumber, z.number().int().min(1).max(6).optional()).default(3)
+});
+
 export const productPaginationSchema = z.object({
   page: z.preprocess(toNumber, z.number().int().min(1).max(1000)).default(1),
   pageSize: z.preprocess(toNumber, z.number().int().min(1).max(200)).default(20),
